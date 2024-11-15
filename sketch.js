@@ -1,48 +1,39 @@
-let capture;
-let detector,
-  detections = [];
+function detectObject(video, canvas){
+    const render = canvas.getContext("2d");
 
-function setup() {
-  createCanvas(640, 640);
+    render.beginPath();
+    render.lineWidth = 2;
+    render.strokeStyle = "#2fad09";
 
-  capture = createCapture({
-    video: {
-      facingMode: "environment",
-    },
-    audio: false,
-  },VIDEO);
-  capture.size(windowWidth, windowWidth);
-  capture.hide();
+    render.font = "16px consolas";
 
-  detector = ml5.objectDetector("cocossd", function () {
-		alert("モデルを読み込みました!")
-    console.log("Model Loaded!");
-    detector.detect(capture, gotDetections);
-  });
-}
+    render.fillStyle = "#ffffff";
+    render.fillRect(0, 0, canvas.width, canvas.height);
+    render.fillStyle = "#000000";
+    render.fillText("Model Loading...", 4, 14);
+    render.fillStyle = "#2fad09";
 
-function gotDetections(error, results) {
-  if (error) {
-    console.error(error);
-  }
-  detections = results;
-  detector.detect(capture, gotDetections);
-}
+    return ml5.YOLO({
+        filterBoxesThreshold: 0.01,
+        IOUThreshold: 0.2,
+        classProbThreshold: 0.5
+    }).ready
+    .then((model)=>{
+        render.clearRect(0, 0, canvas.width, canvas.height);
+        video.play();
 
-function draw() {
-  image(capture.get(), 0, 0);
+        return setInterval(()=>{
+            if(!model.isPredicting){
+                model.detect(video)
+                .then((results)=>{
+                    render.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (object of detections) {
-    const { x, y, width: w, height: h, label } = object;
-
-    stroke(0, 255, 0);
-    strokeWeight(4);
-    noFill();
-    rect(x, y, w, h);
-
-    noStroke();
-    fill(255);
-    textSize(24);
-    text(label, x + 10, y + 24);
-  }
+                    for(const result of results){
+                        render.strokeRect(result.x * canvas.width, result.y * canvas.height, result.w * canvas.width, result.h * canvas.height);
+                        render.fillText(`${result.label}: ${Math.round(result.confidence * 100)} %`, result.x * canvas.width + 4, result.y * canvas.height + 14);
+                    }
+                });
+            }
+        }, 67);
+    });
 }
