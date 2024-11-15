@@ -3,7 +3,7 @@ let detector,
   detections = [];
 
 function setup() {
-  createCanvas(windowWidth, windowWidth);
+  createCanvas(640, 640);
 
   capture = createCapture({
     video: {
@@ -11,7 +11,7 @@ function setup() {
     },
     audio: false,
   },VIDEO);
-  capture.size(640, 640);
+  capture.size(windowWidth, windowWidth);
   capture.hide();
 
   detector = ml5.objectDetector("cocossd", function () {
